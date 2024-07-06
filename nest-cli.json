@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/front-gateway/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/front-gateway/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/front-gateway",
+  "projects": {
+    "front-gateway": {
+      "type": "application",
+      "root": "apps/front-gateway",
+      "entryFile": "main",
+      "sourceRoot": "apps/front-gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/front-gateway/tsconfig.app.json"
+      }
+    },
+    "user-center": {
+      "type": "application",
+      "root": "apps/user-center",
+      "entryFile": "main",
+      "sourceRoot": "apps/user-center/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/user-center/tsconfig.app.json"
+      }
+    },
+    "common": {
+      "type": "library",
+      "root": "libs/common",
+      "entryFile": "index",
+      "sourceRoot": "libs/common/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/common/tsconfig.lib.json"
+      }
+    },
+    "cache": {
+      "type": "library",
+      "root": "libs/cache",
+      "entryFile": "index",
+      "sourceRoot": "libs/cache/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/cache/tsconfig.lib.json"
+      }
+    }
+  }
+}
