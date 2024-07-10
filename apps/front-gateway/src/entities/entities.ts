@@ -1,3 +1,3 @@
-import { CasServer } from './cas.entity'
+import { CasServer } from './cas.entity';
 
-export const entities = [CasServer]
+export const entities = [CasServer];

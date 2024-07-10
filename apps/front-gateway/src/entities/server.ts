@@ -6,7 +6,7 @@ export class ProxyServer {
 	 * AppId
 	 */
 	@ObjectIdColumn({
-		name: '_id'
+		name: '_id',
 	})
 	appId: ObjectId;
 
@@ -20,14 +20,13 @@ export class ProxyServer {
 	 * 代理类型
 	 */
 	@Column()
-	proxyType: string
-
+	proxyType: string;
 
 	static Type: string;
 
 	constructor(appId: ObjectId, serverUrl: string, proxyType: string) {
 		this.appId = appId;
 		this.serverUrl = serverUrl;
-		this.proxyType = proxyType
+		this.proxyType = proxyType;
 	}
 }

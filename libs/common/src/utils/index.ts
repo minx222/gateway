@@ -1,1 +1,1 @@
-export * from './singletonProxy'
+export * from './singletonProxy';

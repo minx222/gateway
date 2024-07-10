@@ -8,9 +8,9 @@ import * as crypto from 'crypto-js';
 import { CasServer } from '../entities/cas.entity';
 import { Result } from '@app/common';
 import { Parser } from 'xml2js';
-import { InjectRedis } from "@liaoliaots/nestjs-redis";
-import Redis from "ioredis";
-import * as qs from 'qs'
+import { InjectRedis } from '@liaoliaots/nestjs-redis';
+import Redis from 'ioredis';
+import * as qs from 'qs';
 
 @Injectable()
 export class CasProxySercice extends BaseProxyService {
@@ -27,44 +27,51 @@ export class CasProxySercice extends BaseProxyService {
 	async proxy(request: FastifyRequest, reply: FastifyReply) {
 		const appId = request.headers['appid'] as string;
 		if (!appId) {
-			reply.send(Result.error('需要提供appid'))
-			console.log(appId, 'res.data')
+			reply.send(Result.error('需要提供appid'));
+			console.log(appId, 'res.data');
 			throw new Error('需要提供appid');
 		}
 		const auth = request.headers['authorization'] as string;
 		const app = await this.casService.findOne(appId);
 		if (!auth) {
-			reply.send(Result.errorData({
-				url: path.join(app.casUrl, '/login')
-			}, 'token不存在'))
+			reply.send(
+				Result.errorData(
+					{
+						url: path.join(app.casUrl, '/login'),
+					},
+					'token不存在',
+				),
+			);
 			throw new Error('token不存在');
 		}
-		const value = await this.redis.get(auth)
+		const value = await this.redis.get(auth);
 		const tokenValue = qs.parse(value);
 		if (!tokenValue.appId || tokenValue.appId !== appId) {
-			reply.send(Result.error('token与appid不匹配'))
+			reply.send(Result.error('token与appid不匹配'));
 			throw new Error('token与appid不匹配');
 		}
-		const headers = request.headers
+		const headers = request.headers;
 		headers[app.cookieName] = tokenValue.token as string;
-		headers['authorization'] = undefined
-		headers['referer'] = undefined
-		headers['host'] = undefined
-		this.httpService.request({
-			method: request.method,
-			data: request.body,
-			params: request.params,
-			headers,
-			url: path.join(app.serverUrl, request.url.replace('/api/sso/proxy', '')),
-		}).subscribe({
-			next: (res) => {
-				console.log(res, 'res')
-				reply.send(res)
-			},
-			error(err) {
-				console.log(err, 'err')
-			},
-		});
+		headers['authorization'] = undefined;
+		headers['referer'] = undefined;
+		headers['host'] = undefined;
+		this.httpService
+			.request({
+				method: request.method,
+				data: request.body,
+				params: request.params,
+				headers,
+				url: path.join(app.serverUrl, request.url.replace('/api/sso/proxy', '')),
+			})
+			.subscribe({
+				next: (res) => {
+					console.log(res, 'res');
+					reply.send(res);
+				},
+				error(err) {
+					console.log(err, 'err');
+				},
+			});
 	}
 
 	async login(request: FastifyRequest, reply: FastifyReply): Promise<any> {
@@ -94,8 +101,8 @@ export class CasProxySercice extends BaseProxyService {
 				});
 				const accessToken = crypto.MD5(res).toString();
 				// accessToken
-				this.redis.set(accessToken, tokenValue)
-				this.redis.expire(accessToken, 60 * 60 * 24 * 7)
+				this.redis.set(accessToken, tokenValue);
+				this.redis.expire(accessToken, 60 * 60 * 24 * 7);
 				reply.send(Result.success(accessToken));
 			},
 			(err) => {

@@ -6,8 +6,8 @@ import { ProxyModule } from './proxy/proxy.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { MongoDBProperties } from '@app/common';
-import { RedisProperties } from '@app/cache'
-import { entities } from './entities'
+import { RedisProperties } from '@app/cache';
+import { entities } from './entities';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { AppController } from './app.controller';
 @Module({
@@ -16,14 +16,14 @@ import { AppController } from './app.controller';
 		CasModule,
 		ProxyModule,
 		RedisModule.forRoot({
-			config: new RedisProperties()
+			config: new RedisProperties(),
 		}),
-    CacheModule.register(),
+		CacheModule.register(),
 		TypeOrmModule.forRoot({
 			...new MongoDBProperties(),
-			entities 
-		})
+			entities,
+		}),
 	],
-	controllers: [AppController]
+	controllers: [AppController],
 })
 export class AppModule {}

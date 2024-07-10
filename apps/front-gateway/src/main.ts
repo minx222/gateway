@@ -1,9 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 
 import { getConfig, AllExceptionsFilter, HttpExceptionFilter } from '@app/common';
@@ -11,10 +8,7 @@ import { getConfig, AllExceptionsFilter, HttpExceptionFilter } from '@app/common
 declare const module: any;
 async function bootstrap() {
 	const config = getConfig();
-	const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter(),
-  );
+	const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
 
 	// 跨域
 	app.enableCors({
@@ -35,7 +29,7 @@ async function bootstrap() {
 	// 启动全局字段校验，保证请求接口字段校验正确。
 	app.useGlobalPipes(new ValidationPipe());
 	await app.listen(config.server.port);
-	console.log(`Application is running on: ${config.server.port}`)
+	console.log(`Application is running on: ${config.server.port}`);
 	// 添加热更新
 	if (module.hot) {
 		module.hot.accept();

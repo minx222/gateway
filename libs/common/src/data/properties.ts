@@ -1,4 +1,4 @@
-import { Config } from "@app/common";
+import { Config } from '@app/common';
 
 export class TypeORMProperties {
 	readonly configPrefix: string;
@@ -8,13 +8,13 @@ export class TypeORMProperties {
 	username: string;
 	password: string;
 	database: string;
-	entities: string
+	entities: string;
 
 	constructor() {}
 
 	init() {
-		const config = new Config()
-		const { url, type, port, username, password, database, entities } = config.get<TypeORMProperties>(this.configPrefix)
+		const config = new Config();
+		const { url, type, port, username, password, database, entities } = config.get<TypeORMProperties>(this.configPrefix);
 		this.url = url;
 		this.type = type;
 		this.port = port;

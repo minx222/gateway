@@ -1,1 +1,1 @@
-export * from './redis.properties'
+export * from './redis.properties';

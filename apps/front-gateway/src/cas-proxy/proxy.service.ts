@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CasService } from './service';
 import { HttpService } from '@nestjs/axios';
-import type { AxiosResponse, AxiosRequestConfig } from 'axios'
+import type { AxiosResponse, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { BaseProxyService } from '../proxy/base.service';
 import * as path from 'path';
 import { FastifyReply, FastifyRequest } from 'fastify';
@@ -9,10 +9,9 @@ import * as crypto from 'crypto-js';
 import { CasServer } from '../entities/cas.entity';
 import { Result } from '@app/common';
 import { Parser } from 'xml2js';
-import { InjectRedis } from "@liaoliaots/nestjs-redis";
-import Redis from "ioredis";
-import * as qs from 'qs'
-import { catchError, map } from 'rxjs';
+import { InjectRedis } from '@liaoliaots/nestjs-redis';
+import Redis from 'ioredis';
+import * as qs from 'qs';
 
 @Injectable()
 export class CasProxySercice extends BaseProxyService {
@@ -24,56 +23,74 @@ export class CasProxySercice extends BaseProxyService {
 	) {
 		super();
 		this.parse = new Parser();
-		this.httpService.axiosRef.interceptors.request.use((config) => {
-			// @ts-ignore
-			config.startTime = Date.now();
-			return config;
-		})
-		this.httpService.axiosRef.interceptors.response.use((res) => {
-			// @ts-ignore
-			config.startTime = Date.now();
-			console.log(res, 'res');
-			return res;
-		})
+		this.httpService.axiosRef.interceptors.request.use(
+			(
+				config: InternalAxiosRequestConfig & {
+					startTime: number;
+				},
+			) => {
+				config.startTime = Date.now();
+				return config;
+			},
+		);
+		this.httpService.axiosRef.interceptors.response.use(
+			(
+				res: AxiosResponse & {
+					startTime: number;
+				},
+			) => {
+				console.log(`${res.config.method} ${res.config.url} ${res.status} ${Date.now() - res.startTime}ms`);
+				return res;
+			},
+		);
 	}
 
 	async proxy(request: FastifyRequest, reply: FastifyReply) {
 		const appId = request.headers['appid'] as string;
 		if (!appId) {
-			reply.send(Result.error('需要提供appid'))
-			console.log(appId, 'res.data')
+			reply.send(Result.error('需要提供appid'));
+			console.log(appId, 'res.data');
 			throw new Error('需要提供appid');
 		}
 		const auth = request.headers['authorization'] as string;
 		const app = await this.casService.findOne(appId);
 		if (!auth) {
-			reply.send(Result.errorData({
-				url: path.join(app.casUrl, '/login')
-			}, 'token不存在'))
+			reply.send(
+				Result.errorData(
+					{
+						url: path.join(app.casUrl, '/login'),
+					},
+					'token不存在',
+				),
+			);
 			throw new Error('token不存在');
 		}
-		const value = await this.redis.get(auth)
+		const value = await this.redis.get(auth);
 		const tokenValue = qs.parse(value);
 		if (!tokenValue.appId || tokenValue.appId !== appId) {
-			reply.send(Result.error('token与appid不匹配'))
+			reply.send(Result.error('token与appid不匹配'));
 			throw new Error('token与appid不匹配');
 		}
-		const headers = request.headers
+		const headers = request.headers;
 		headers[app.cookieName] = tokenValue.token as string;
-		headers['authorization'] = undefined
-		headers['referer'] = undefined
-		headers['host'] = undefined
+		headers['authorization'] = undefined;
+		headers['referer'] = undefined;
+		headers['host'] = undefined;
+		// 请求加密
 		this.request({
 			method: request.method,
 			data: request.body,
 			params: request.params,
 			headers,
 			url: path.join(app.serverUrl, request.url.replace('/api/sso/proxy', '')),
-		}).then((res) => {
-			reply.send(res)
-		}, (err) => {
-			reply.send(err.message)
-		})
+		}).then(
+			(res) => {
+				reply.send(res);
+			},
+			(err) => {
+				reply.send(err.message);
+			},
+		);
 	}
 
 	async login(request: FastifyRequest, reply: FastifyReply): Promise<any> {
@@ -96,6 +113,7 @@ export class CasProxySercice extends BaseProxyService {
 		}
 		this.handleTicket(app, request.headers['ticketurl'] as string, data.ticket).then(
 			(res) => {
+				console.log(res, 'res');
 				// 存token
 				const tokenValue = qs.stringify({
 					token: res,
@@ -103,8 +121,8 @@ export class CasProxySercice extends BaseProxyService {
 				});
 				const accessToken = crypto.MD5(res).toString();
 				// accessToken
-				this.redis.set(accessToken, tokenValue)
-				this.redis.expire(accessToken, 60 * 60 * 24 * 7)
+				this.redis.set(accessToken, tokenValue);
+				this.redis.expire(accessToken, 60 * 60 * 24 * 7);
 				reply.send(Result.success(accessToken));
 			},
 			(err) => {
@@ -121,7 +139,6 @@ export class CasProxySercice extends BaseProxyService {
 			_validateUri = '/p3/serviceValidate';
 		}
 		const url = `${server.casUrl}${_validateUri}?service=${requestUrl}&ticket=${ticket}`;
-		console.log(url, 'url')
 		return new Promise<string>((resolve, reject) => {
 			this.request<string>({
 				url,
@@ -129,45 +146,45 @@ export class CasProxySercice extends BaseProxyService {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-			}).then((res) => {
-				resolve(res)
 			})
+				.then((res) => {
+					return this.parseCasXML(res);
+				}, reject)
+				.then(resolve, reject);
 		});
 	}
 
-	request<T = any>(config: AxiosRequestConfig & {
-		count?: number
-		startTimer?: number
-	}) {
-		if (!config.startTimer) {
-			config.startTimer = Date.now();
-		}
-		return new Promise<T>((resolve, reject) => {
-			const request = this.httpService.request(config);
-			request.pipe(
-				map(res => {
-					if (res.status === 200) {
-						resolve(res.data);
-						return;
-					} else if (!config.count || config.count < 3) {
-						config.count = config.count ? config.count + 1 : 1;
-						this.request(config).then(resolve, reject);
-					} else {
-						reject(res)
-					}
-				}),
-				catchError((err) => {
-					if (!config.count || config.count < 3) {
-						config.count = config.count ? config.count + 1 : 1;
-						this.request(config).then(resolve, reject);
-					} else {
-						reject(err)
-					}
-					return err
-				})
-			).subscribe(() => {
-				console.log(`${config.method} ${config.url} ${Date.now() - config.startTimer}ms`)
-			})
+	request<T = any>(
+		config: AxiosRequestConfig & {
+			count?: number;
+			startTimer?: number;
+		},
+	) {
+		return new Promise<T>(async (resolve, reject) => {
+			this.httpService
+				.request(config)
+				.toPromise()
+				.then(
+					(res) => {
+						if (res.status === 200) {
+							resolve(res.data);
+							return;
+						} else if (!config.count || config.count < 3) {
+							config.count = config.count ? config.count + 1 : 1;
+							this.request(config).then(resolve, reject);
+						} else {
+							reject(res);
+						}
+					},
+					(err) => {
+						if (!config.count || config.count < 3) {
+							config.count = config.count ? config.count + 1 : 1;
+							this.request(config).then(resolve, reject);
+						} else {
+							reject(err);
+						}
+					},
+				);
 		});
 	}
 
