@@ -4,18 +4,13 @@ import { CasService } from './service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CasServer } from '../entities/cas.entity';
 import { CasProxySercice } from './proxy.service';
-import { HttpModule } from '@nestjs/axios';
+
+import { HttpRequestModule } from '@app/common';
 
 @Module({
 	controllers: [CasController],
 	providers: [CasService, CasProxySercice],
-	imports: [
-		TypeOrmModule.forFeature([CasServer]),
-		HttpModule.register({
-			timeout: 10 * 1000,
-			maxRedirects: 5,
-		}),
-	],
+	imports: [TypeOrmModule.forFeature([CasServer]), HttpRequestModule],
 	exports: [CasProxySercice],
 })
 export class CasModule {}

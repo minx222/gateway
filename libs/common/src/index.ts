@@ -7,4 +7,4 @@ export * from './result';
 
 export * from './data';
 
-// export * from './request'
+export * from './request';

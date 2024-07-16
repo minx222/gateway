@@ -28,7 +28,6 @@ export class CasProxySercice extends BaseProxyService {
 		const appId = request.headers['appid'] as string;
 		if (!appId) {
 			reply.send(Result.error('需要提供appid'));
-			console.log(appId, 'res.data');
 			throw new Error('需要提供appid');
 		}
 		const auth = request.headers['authorization'] as string;
@@ -65,11 +64,7 @@ export class CasProxySercice extends BaseProxyService {
 			})
 			.subscribe({
 				next: (res) => {
-					console.log(res, 'res');
 					reply.send(res);
-				},
-				error(err) {
-					console.log(err, 'err');
 				},
 			});
 	}

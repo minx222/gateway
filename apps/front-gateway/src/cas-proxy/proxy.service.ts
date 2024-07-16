@@ -1,13 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { CasService } from './service';
-import { HttpService } from '@nestjs/axios';
-import type { AxiosResponse, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { BaseProxyService } from '../proxy/base.service';
 import * as path from 'path';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import * as crypto from 'crypto-js';
 import { CasServer } from '../entities/cas.entity';
-import { Result } from '@app/common';
+import { HttpService, Result, ResultCode } from '@app/common';
 import { Parser } from 'xml2js';
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import Redis from 'ioredis';
@@ -23,34 +21,13 @@ export class CasProxySercice extends BaseProxyService {
 	) {
 		super();
 		this.parse = new Parser();
-		this.httpService.axiosRef.interceptors.request.use(
-			(
-				config: InternalAxiosRequestConfig & {
-					startTime: number;
-				},
-			) => {
-				config.startTime = Date.now();
-				return config;
-			},
-		);
-		this.httpService.axiosRef.interceptors.response.use(
-			(
-				res: AxiosResponse & {
-					startTime: number;
-				},
-			) => {
-				console.log(`${res.config.method} ${res.config.url} ${res.status} ${Date.now() - res.startTime}ms`);
-				return res;
-			},
-		);
 	}
 
 	async proxy(request: FastifyRequest, reply: FastifyReply) {
 		const appId = request.headers['appid'] as string;
 		if (!appId) {
 			reply.send(Result.error('需要提供appid'));
-			console.log(appId, 'res.data');
-			throw new Error('需要提供appid');
+			return;
 		}
 		const auth = request.headers['authorization'] as string;
 		const app = await this.casService.findOne(appId);
@@ -63,32 +40,37 @@ export class CasProxySercice extends BaseProxyService {
 					'token不存在',
 				),
 			);
-			throw new Error('token不存在');
+			return;
 		}
 		const value = await this.redis.get(auth);
+		if (!value) {
+			const app = await this.casService.findOne(appId);
+			reply.send(new Result(ResultCode.Unauthorized, app.casUrl + '/login', 'token过期'));
+		}
 		const tokenValue = qs.parse(value);
 		if (!tokenValue.appId || tokenValue.appId !== appId) {
+			console.log(value, tokenValue, appId, '1231');
 			reply.send(Result.error('token与appid不匹配'));
-			throw new Error('token与appid不匹配');
+			return;
 		}
 		const headers = request.headers;
 		headers[app.cookieName] = tokenValue.token as string;
 		headers['authorization'] = undefined;
 		headers['referer'] = undefined;
 		headers['host'] = undefined;
-		// 请求加密
-		this.request({
+		const options = {
 			method: request.method,
 			data: request.body,
 			params: request.params,
 			headers,
 			url: path.join(app.serverUrl, request.url.replace('/api/sso/proxy', '')),
-		}).then(
+		};
+		this.httpService.request(options).then(
 			(res) => {
 				reply.send(res);
 			},
 			(err) => {
-				reply.send(err.message);
+				reply.send(Result.error(err));
 			},
 		);
 	}
@@ -113,7 +95,6 @@ export class CasProxySercice extends BaseProxyService {
 		}
 		this.handleTicket(app, request.headers['ticketurl'] as string, data.ticket).then(
 			(res) => {
-				console.log(res, 'res');
 				// 存token
 				const tokenValue = qs.stringify({
 					token: res,
@@ -122,7 +103,7 @@ export class CasProxySercice extends BaseProxyService {
 				const accessToken = crypto.MD5(res).toString();
 				// accessToken
 				this.redis.set(accessToken, tokenValue);
-				this.redis.expire(accessToken, 60 * 60 * 24 * 7);
+				this.redis.expire(accessToken, 60 * 24 * 7);
 				reply.send(Result.success(accessToken));
 			},
 			(err) => {
@@ -140,51 +121,18 @@ export class CasProxySercice extends BaseProxyService {
 		}
 		const url = `${server.casUrl}${_validateUri}?service=${requestUrl}&ticket=${ticket}`;
 		return new Promise<string>((resolve, reject) => {
-			this.request<string>({
-				url,
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-			})
-				.then((res) => {
-					return this.parseCasXML(res);
-				}, reject)
-				.then(resolve, reject);
-		});
-	}
-
-	request<T = any>(
-		config: AxiosRequestConfig & {
-			count?: number;
-			startTimer?: number;
-		},
-	) {
-		return new Promise<T>(async (resolve, reject) => {
 			this.httpService
-				.request(config)
-				.toPromise()
-				.then(
-					(res) => {
-						if (res.status === 200) {
-							resolve(res.data);
-							return;
-						} else if (!config.count || config.count < 3) {
-							config.count = config.count ? config.count + 1 : 1;
-							this.request(config).then(resolve, reject);
-						} else {
-							reject(res);
-						}
+				.request<string>({
+					url,
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
 					},
-					(err) => {
-						if (!config.count || config.count < 3) {
-							config.count = config.count ? config.count + 1 : 1;
-							this.request(config).then(resolve, reject);
-						} else {
-							reject(err);
-						}
-					},
-				);
+				})
+				.then((res) => {
+					return this.parseCasXML(res.data);
+				})
+				.then(resolve, reject);
 		});
 	}
 
@@ -196,6 +144,7 @@ export class CasProxySercice extends BaseProxyService {
 		}
 		const app = await this.casService.findOne(appId);
 		const token = request.headers['authorization'];
+		// const token = request.cookies['Authorization'];
 		if (!token) {
 			reply.send(
 				Result.errorData(
@@ -203,6 +152,18 @@ export class CasProxySercice extends BaseProxyService {
 						url: path.join(app.casUrl, '/login'),
 					},
 					'需要提供token',
+				),
+			);
+			return;
+		}
+		const value = await this.redis.get(token);
+		if (!value) {
+			reply.send(
+				Result.errorData(
+					{
+						url: path.join(app.casUrl, '/login'),
+					},
+					'token过期',
 				),
 			);
 			return;

@@ -26,7 +26,9 @@ export class ProxyService {
 	}
 
 	adater(proxyType: string): BaseProxyService {
-		console.log(proxyType);
+		if (proxyType) {
+			return this.casProxyService;
+		}
 		return this.casProxyService;
 	}
 }

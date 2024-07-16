@@ -3,6 +3,7 @@ const nodeExternals = require('webpack-node-externals');
 const CleanWebpackPlugin = require('clean-webpack-plugin').CleanWebpackPlugin;
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin').TsconfigPathsPlugin;
 // const SpeedMeasurePlugin = require('speed-measure-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin')
 
 const tsConfigFile = 'tsconfig.build.json';
 
@@ -29,6 +30,10 @@ const config = {
 				loader: "esbuild-loader"
 			},
 		],
+	},
+	optimization: {
+		minimize: true,
+		minimizer: [new TerserPlugin()],
 	},
 	resolve: {
 		extensions: ['.tsx', '.ts', '.js'],

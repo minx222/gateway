@@ -2,7 +2,7 @@ import { Controller, Req, RequestMapping, RequestMethod, Res } from '@nestjs/com
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { ProxyService } from './proxy.service';
 
-@Controller('sso')
+@Controller()
 export class ProxyController {
 	constructor(private proxyServier: ProxyService) {}
 
@@ -15,7 +15,7 @@ export class ProxyController {
 	}
 
 	@RequestMapping({
-		path: '/login',
+		path: '/sso/login',
 		method: RequestMethod.ALL,
 	})
 	login(@Req() request: FastifyRequest, @Res() reply: FastifyReply) {
@@ -23,7 +23,7 @@ export class ProxyController {
 	}
 
 	@RequestMapping({
-		path: '/checkToken',
+		path: '/sso/checkToken',
 		method: RequestMethod.ALL,
 	})
 	checkToken(@Req() request: FastifyRequest, @Res() reply: FastifyReply) {
