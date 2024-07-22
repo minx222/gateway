@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 
 import { CasService } from './service';
-import { CasServer } from '../entities/cas.entity';
-import { Result } from '@app/common';
+import { CasServer } from '@app/front-gateway/entities/cas.entity';
+import { Result } from '@libs/common';
 
 @Controller('/cas')
 export class CasController {

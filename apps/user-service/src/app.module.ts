@@ -3,7 +3,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { HttpModule } from '@nestjs/axios';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { MongoDBProperties } from '@app/common';
+import { MongoDBProperties } from '@libs/common';
 import { RedisProperties } from '@app/cache';
 import { entities } from './entities';
 import { RedisModule } from '@liaoliaots/nestjs-redis';

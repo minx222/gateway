@@ -3,7 +3,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 
-import { getConfig, AllExceptionsFilter, HttpExceptionFilter } from '@app/common';
+import { getConfig, AllExceptionsFilter, HttpExceptionFilter } from '@libs/common';
 
 declare const module: any;
 async function bootstrap() {

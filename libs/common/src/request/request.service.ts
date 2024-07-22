@@ -30,10 +30,12 @@ export class HttpService {
 		this.instance.interceptors.response.use(
 			(
 				res: AxiosResponse & {
-					startTime: number;
+					config: AxiosRequestConfig & {
+						startTime: number;
+					};
 				},
 			) => {
-				console.log('request', `${res.config.method} ${res.config.url} ${res.status} ${Date.now() - res.startTime}ms`);
+				console.log('request', `${res.config.method} ${res.config.url} ${res.status} ${Date.now() - res.config.startTime}ms`);
 				return res;
 			},
 			(error) => {
@@ -52,5 +54,9 @@ export class HttpService {
 
 	request<T = any, D = any>(config: AxiosRequestConfig<D>) {
 		return this.instance.request<T>(config);
+	}
+
+	post<T = any, D = any, C = any>(url: string, data: D, config?: AxiosRequestConfig<C>) {
+		return this.instance.post<T>(url, data, config);
 	}
 }

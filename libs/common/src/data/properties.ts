@@ -1,4 +1,4 @@
-import { Config } from '@app/common';
+import { Config } from '@libs/common';
 
 export class TypeORMProperties {
 	readonly configPrefix: string;

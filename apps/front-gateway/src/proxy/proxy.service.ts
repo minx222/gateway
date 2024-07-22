@@ -1,14 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { BaseProxyService } from './base.service';
-import { CasProxySercice } from '../cas-proxy/proxy.service';
+import { CasProxySercice } from '@app/front-gateway/http/cas/proxy.service';
+import { OauthProxySercice } from '../http/oauth/proxy.service';
+import { OauthServer } from '../entities';
 
 @Injectable()
 export class ProxyService {
-	constructor(private readonly casProxyService: CasProxySercice) {}
+	constructor(
+		private readonly casProxyService: CasProxySercice,
+		private readonly oauthProxyService: OauthProxySercice,
+	) {}
 
 	proxy(request: FastifyRequest, reply: FastifyReply) {
-		const proxyType = request.headers['Proxy-type'] as string;
+		const proxyType = request.headers['Proxytype'] as string;
 		const service = this.adater(proxyType);
 		service.proxy(request, reply);
 	}
@@ -26,8 +31,8 @@ export class ProxyService {
 	}
 
 	adater(proxyType: string): BaseProxyService {
-		if (proxyType) {
-			return this.casProxyService;
+		if (proxyType === OauthServer.Type) {
+			return this.oauthProxyService;
 		}
 		return this.casProxyService;
 	}

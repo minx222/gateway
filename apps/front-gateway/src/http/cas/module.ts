@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { CasController } from './controller';
 import { CasService } from './service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CasServer } from '../entities/cas.entity';
+import { CasServer } from '@app/front-gateway/entities';
 import { CasProxySercice } from './proxy.service';
 
-import { HttpRequestModule } from '@app/common';
+import { HttpRequestModule } from '@libs/common';
 
 @Module({
 	controllers: [CasController],

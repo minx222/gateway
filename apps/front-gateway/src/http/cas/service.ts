@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { MongoRepository } from 'typeorm';
 import { ObjectId } from 'mongodb';
 
-import { CasServer } from '../entities/cas.entity';
+import { CasServer } from '@app/front-gateway/entities/cas.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()

@@ -1,25 +1,22 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import fastifyCookie from '@fastify/cookie';
 import { AppModule } from './app.module';
 
-import { getConfig, AllExceptionsFilter, HttpExceptionFilter } from '@app/common';
+import { getConfig, AllExceptionsFilter, HttpExceptionFilter } from '@libs/common';
 
 declare const module: any;
 async function bootstrap() {
 	const config = getConfig();
 	const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
-	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-	// @ts-ignore
-	await app.register(fastifyCookie, {
-		secret: 'my-secret', // for cookies signature
-	});
 
 	// 跨域
 	app.enableCors({
-		origin: '*',
+		origin: true,
+		methods: 'GET,PUT,POST',
+		allowedHeaders: ['*'],
 		credentials: true,
+		maxAge: 3600,
 	});
 
 	// 异常过滤器

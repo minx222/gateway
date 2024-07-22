@@ -1,4 +1,4 @@
-import { Config } from '@app/common';
+import { Config } from '@libs/common';
 
 export class RedisProperties {
 	prefix = 'nest.datasource.redis';
