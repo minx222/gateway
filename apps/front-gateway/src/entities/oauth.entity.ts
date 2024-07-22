@@ -56,7 +56,7 @@ export class OauthServer extends ProxyServer {
 		clientId: string,
 		cookieName: string,
 	) {
-		super(appId, serverUrl, 'CAS');
+		super(appId, serverUrl, 'Oauth');
 		this.casUrl = casUrl;
 		this.casVersion = casVersion;
 		this.serverCode = serverCode;
